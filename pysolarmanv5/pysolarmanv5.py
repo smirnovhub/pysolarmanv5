@@ -15,6 +15,9 @@ from multiprocessing import Queue
 from typing import Any
 from random import randrange
 
+# dsmirnov: use Tuple instead of tuple to support Python 3.8
+from typing import Tuple
+
 from umodbus.client.serial import rtu
 from umodbus.client.serial.redundancy_check import get_crc
 from umodbus.exceptions import error_code_to_exception_map
@@ -410,7 +413,8 @@ class PySolarmanV5:
             return False
         return True
 
-    def _received_frame_response(self, frame: bytes) -> tuple[bool, bytearray]:
+    # dsmirnov: use Tuple instead of tuple to support Python 3.8
+    def _received_frame_response(self, frame: bytes) -> Tuple[bool, bytearray]:
         """
         Return response to frames with control codes 0x41 (handshake), 0x42 (data), 0x43 (info), 0x47 (heartbeat) and 0x48 (report)
 
