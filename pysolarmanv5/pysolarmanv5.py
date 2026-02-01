@@ -373,8 +373,8 @@ class PySolarmanV5:
         self.log.debug("[%s] SENT: %s", self.serial, frame.hex(" "))
         if not self._reader_thr.is_alive():
             raise NoSocketAvailableError("Connection already closed.")
-        self.sock.sendall(frame)
         self._data_wanted.set()
+        self.sock.sendall(frame)
         self._last_frame = frame
         response_frame = b""
         try:
