@@ -520,6 +520,10 @@ class PySolarmanV5:
             self.log.debug(
                 "Auto-Reconnect enabled. Trying to establish a new connection"
             )
+
+            # dsmirnov: add delay to prevent DOS attack to the logger in case of auto-reconnect
+            time.sleep(1)
+
             if self._sock_fd:
                 self._poll.unregister(self._sock_fd)
                 self._sock_fd = None
