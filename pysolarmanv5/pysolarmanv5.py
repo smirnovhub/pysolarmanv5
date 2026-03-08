@@ -19,7 +19,6 @@ from umodbus.client.serial import rtu
 from umodbus.client.serial.redundancy_check import get_crc
 from umodbus.exceptions import error_code_to_exception_map
 
-
 _WIN_PLATFORM = platform.system() == "Windows"
 
 

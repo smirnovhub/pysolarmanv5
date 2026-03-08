@@ -27,6 +27,7 @@ logging.basicConfig(
 )
 log = logging.getLogger("solarman")
 
+
 async def handle_client(
     reader: asyncio.StreamReader,
     writer: asyncio.StreamWriter,
@@ -34,7 +35,11 @@ async def handle_client(
     logger_serial: int,
 ):
     solarmanv5 = PySolarmanV5Async(
-        address=logger_address, serial=logger_serial, verbose=True, auto_reconnect=True, logger=log
+        address=logger_address,
+        serial=logger_serial,
+        verbose=True,
+        auto_reconnect=True,
+        logger=log,
     )
     await solarmanv5.connect()
 
@@ -110,7 +115,11 @@ def main():
         "-l", "--logger", required=True, help="The IP address of the logger"
     )
     parser.add_argument(
-        "-s", "--serial", required=True, type=int, help="The serial number of the logger"
+        "-s",
+        "--serial",
+        required=True,
+        type=int,
+        help="The serial number of the logger",
     )
     args = parser.parse_args()
 

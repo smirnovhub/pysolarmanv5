@@ -17,7 +17,6 @@ from umodbus.functions import (
 
 from pysolarmanv5.pysolarmanv5 import CONTROL_CODE, PySolarmanV5, V5FrameError
 
-
 _WIN_PLATFORM = True if platform.system() == "Windows" else False
 socketserver.TCPServer.allow_reuse_address = True
 socketserver.TCPServer.allow_reuse_port = True
