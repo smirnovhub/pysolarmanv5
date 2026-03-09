@@ -16,9 +16,16 @@ Can be used with Home Assistant's native Modbus integration using config below:
 import argparse
 import asyncio
 import struct
+import logging
 from functools import partial
 from umodbus.client.serial.redundancy_check import get_crc
 from pysolarmanv5 import PySolarmanV5Async
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+log = logging.getLogger("solarman")
 
 
 async def handle_client(
@@ -28,49 +35,53 @@ async def handle_client(
     logger_serial: int,
 ):
     solarmanv5 = PySolarmanV5Async(
-        logger_address, logger_serial, verbose=True, auto_reconnect=True
+        address=logger_address,
+        serial=logger_serial,
+        verbose=True,
+        auto_reconnect=True,
+        logger=log,
     )
     await solarmanv5.connect()
 
     addr = writer.get_extra_info("peername")
 
-    print(f"{addr}: New connection")
+    log.info(f"{addr}: New connection")
 
     try:
         while True:
-            # Convert TCP to RTU
-            header = await reader.readexactly(6)
-            if not header:
+            try:
+                # read Modbus TCP frame
+                header = await reader.readexactly(6)
+                # decode header
+                trans_id, proto_id, length = struct.unpack(">HHH", header)
+                unit_id = await reader.readexactly(1)
+                pdu = await reader.readexactly(length - 1)  # length includes unit_id
+            except asyncio.IncompleteReadError:
+                # connection closed
                 break
 
-            trans_id, proto_id, length = struct.unpack(">HHH", header)
-            unit_id = await reader.readexactly(1)
-            pdu = await reader.readexactly(length - 1)  # length includes unit_id
-
+            # create equivalent RTU frame
             slave_id = b"\x01"
             modbus_rtu = slave_id + pdu + get_crc(slave_id + pdu)
 
-            try:
-                # Convert RTU back to TCP
-                reply_rtu = await solarmanv5.send_raw_modbus_frame(modbus_rtu)
+            reply_rtu = await solarmanv5.send_raw_modbus_frame(modbus_rtu)
 
-                slave_id_reply = reply_rtu[0:1]
-                pdu_reply = reply_rtu[1:-2]
-                crc_reply = reply_rtu[-2:]
+            # slave_id_reply = reply_rtu[0:1]
+            pdu_reply = reply_rtu[1:-2]
+            # crc_reply = reply_rtu[-2:]
 
-                mbap = struct.pack(">HHH", trans_id, 0, len(pdu_reply) + 1)
-                reply_tcp = mbap + unit_id + pdu_reply
+            # Convert RTU back to TCP
+            mbap = struct.pack(">HHH", trans_id, 0, len(pdu_reply) + 1)
+            reply_tcp = mbap + unit_id + pdu_reply
 
-                writer.write(reply_tcp)
-            except:
-                pass
+            writer.write(reply_tcp)
 
         await writer.drain()
     except OSError:
         # https://github.com/python/cpython/issues/83037
         pass
 
-    print(f"{addr}: Connection closed")
+    log.info(f"{addr}: Connection closed")
     await solarmanv5.disconnect()
 
 
@@ -85,14 +96,14 @@ async def run_proxy(
         port,
     )
     async with server:
-        print(f"Listening on {bind_address}:{port}")
+        log.info(f"Listening on {bind_address}:{port}")
         await server.serve_forever()
 
 
 def main():
     parser = argparse.ArgumentParser(
-        prog="solarman rtu proxy",
-        description="A Modbus RTU over TCP Proxy for Solarman loggers",
+        prog="solarman-tcp-proxy",
+        description="A Modbus TCP Proxy for Solarman loggers",
     )
     parser.add_argument(
         "-b", "--bind", default="0.0.0.0", help="The address to listen on"
