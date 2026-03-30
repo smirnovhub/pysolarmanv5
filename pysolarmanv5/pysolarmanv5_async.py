@@ -269,9 +269,7 @@ class PySolarmanV5Async(PySolarmanV5):
                 self.data_queue.get(), self.socket_timeout
             )
             if response_frame == b"":
-                raise NoSocketAvailableError(
-                    "Connection closed on read. Retry if auto-reconnect is enabled"
-                )
+                raise NoSocketAvailableError("Connection closed on read")
         except AttributeError as exc:
             raise NoSocketAvailableError("Connection already closed") from exc
         except NoSocketAvailableError:
